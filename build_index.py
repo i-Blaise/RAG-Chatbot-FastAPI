@@ -5,6 +5,21 @@ import numpy as np
 import uuid
 import faiss
 import pickle
+import pandas as pd
+from pypdf import PdfReader
+import sys
+
+
+def chunk_text(text, chunk_size=2000, overlap=200):
+    chunks = []
+    start = 0
+
+    while start < len(text):
+        end = start + chunk_size
+        chunks.append(text[start:end])
+        start += chunk_size - overlap
+
+    return chunks
 
 load_dotenv()
 
@@ -13,31 +28,45 @@ api_key = os.getenv("OPENAI_API_KEY")
 
 client = Client(api_key=api_key)
 
-with open("knowledge.txt", "r", encoding="utf-8") as f:
-    content = f.read()
+reader = PdfReader("kb/Cybersecurity (Amendment) Draft Bill 2025 final 15102025.pdf")
+
+texts = ""
+for page in reader.pages:
+    page_text = page.extract_text()
+    if page_text:
+        texts += page_text + "\n"
+
+
+
 
 # Im chunking it per paragraphs 
-chunks = [
-    chunk.strip()
-    for chunk in content.split("\n\n")
-    if chunk.strip()
-]
+# chunks = [
+#     chunk.strip()
+#     for chunk in texts.split("\n\n")
+#     if chunk.strip()
+# ]
+
+chunks = chunk_text(texts)
+
+# print(chunks)
+# sys.exit()
 
 vectors = []
 ids = []
 metadata = {}
 
-batch_size = 100
+batch_size = 10
 
-for i in range(0, len(chunks), batch_size):
-    batch = chunks[i:i+batch_size]
+# for i in range(0, len(chunks), batch_size):
+#     batch = chunks[i:i+batch_size]
 
+for chunk in chunks:
     response = client.embeddings.create(
-        input=batch,
+        input=chunk,
         model="text-embedding-3-small"
     )
 
-    for chunk_text, item in zip(batch, response.data):
+    for chunk_text, item in zip(chunk, response.data):
         embedding = np.array(item.embedding, dtype="float32")
         vector_id = uuid.uuid4().int & (1<<63)-1
 
@@ -62,3 +91,4 @@ with open("data/metadata.pkl", "wb") as f:
 
 
 
+print("Indexing Complete!")
