@@ -1,2 +1,2 @@
 /.env
-venvpip install pipreqs
+venv

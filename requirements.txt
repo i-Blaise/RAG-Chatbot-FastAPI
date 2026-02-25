@@ -1,4 +1,4 @@
-faiss==1.5.3
+faiss-cpu
 fastapi==0.129.0
 numpy==2.4.2
 openai==2.21.0
@@ -6,3 +6,4 @@ pandas==3.0.1
 pydantic==2.12.5
 pypdf==6.7.1
 python-dotenv==1.2.1
+uvicorn[standard]>=0.30.0

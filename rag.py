@@ -11,12 +11,18 @@ def chatbot(message: str):
     api_key = os.getenv("OPENAI_API_KEY")
     client = OpenAI(api_key=api_key)
 
-    index = faiss.read_index("data/faiss.index")
-    with open("data/metadata", "rb") as f:
+    index_path = "data/faiss.index"
+    metadata_path = "data/metadata.pkl"
+    if not os.path.isfile(index_path) or not os.path.isfile(metadata_path):
+        raise FileNotFoundError(
+            "RAG index not found. Run build_index.py first (requires PDF in kb/)."
+        )
+    index = faiss.read_index(index_path)
+    with open(metadata_path, "rb") as f:
         metadata = pickle.load(f)
 
     try:
-        with open("chat_history.pkl", "rb") as f:
+        with open("data/chat_history.pkl", "rb") as f:
             chat_history = pickle.load(f)
     except FileNotFoundError:
         chat_history = []
@@ -38,16 +44,15 @@ def chatbot(message: str):
 
     scores, indeces = index.search(query_vector, k)
 
-    valid_results = []
-
-    for score, ids in zip(scores[0], indeces[0]):
-        if score >= threshold:
-            valid_results.append(score, metadata[ids])
+    sources = []
+    for score, idx in zip(scores[0], indeces[0]):
+        if idx in metadata:
+            sources.append({"text": metadata[idx], "score": float(score)})
 
     retrieved_chunks = [
-        metadata[ids]
-        for ids in indeces[0]
-        if ids in metadata
+        metadata[idx]
+        for idx in indeces[0]
+        if idx in metadata
     ]
 
     history_chat = ""
@@ -72,22 +77,18 @@ def chatbot(message: str):
     {query}
     """
 
-    result = client.responses.create(
-        input=query,
-        model="gpt-5.2"
+    result = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": prompt}],
     )
-    
-    answer = result.output_text
+    answer = result.choices[0].message.content
 
     chat_history.append({"role": "user", "content": query})
     chat_history.append({"role": "assistant", "content": answer})
 
 
-    try:
-        with open("data/chat_history", "wb") as f:
-            pickle.dump(chat_history, f)
-    except FileNotFoundError:
-        with open("data/chat_history", "wb") as f:
-            pickle.dump(chat_history, f)
+    os.makedirs("data", exist_ok=True)
+    with open("data/chat_history.pkl", "wb") as f:
+        pickle.dump(chat_history, f)
 
-    return answer
+    return {"answer": answer, "sources": sources}

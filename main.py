@@ -12,16 +12,20 @@ ADMIN_SECRET = os.getenv("ADMIN_SECRET")
 class ChatRequest(BaseModel):
     message: str
 
+class SourceChunk(BaseModel):
+    text: str
+    score: float
+
+
 class ChatResponse(BaseModel):
     answer: str
-
-
+    sources: list[SourceChunk]
 
 
 @app.post("/chat", response_model=ChatResponse)
 def chat_endpoint(request: ChatRequest):
     try:
-        answer = chatbot(request.message)
-        return ChatResponse(answer=answer)
+        result = chatbot(request.message)
+        return ChatResponse(answer=result["answer"], sources=result["sources"])
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

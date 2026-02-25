@@ -65,25 +65,25 @@ for chunk in chunks:
         input=chunk,
         model="text-embedding-3-small"
     )
+    item = response.data[0]
+    embedding = np.array(item.embedding, dtype="float32")
+    vector_id = uuid.uuid4().int & ((1 << 63) - 1)
 
-    for chunk_text, item in zip(chunk, response.data):
-        embedding = np.array(item.embedding, dtype="float32")
-        vector_id = uuid.uuid4().int & (1<<63)-1
+    vectors.append(embedding)
+    ids.append(vector_id)
+    metadata[vector_id] = chunk
 
-        vectors.append(embedding)
-        ids.append(vector_id)
-        metadata[vector_id] = chunk_text
-    
 vectors = np.vstack(vectors)
-ids = np.array(ids, dtype="float32")
+ids = np.array(ids, dtype="int64")
 
-dimension = vectors.reshape[1]
-faiss.normalize_L2(dimension)
+faiss.normalize_L2(vectors)
+dimension = vectors.shape[1]
 
 base_index = faiss.IndexFlatIP(dimension)
 index = faiss.IndexIDMap(base_index)
 index.add_with_ids(vectors, ids)
 
+os.makedirs("data", exist_ok=True)
 faiss.write_index(index, "data/faiss.index")
 
 with open("data/metadata.pkl", "wb") as f:
