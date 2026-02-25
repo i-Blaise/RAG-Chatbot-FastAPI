@@ -71,7 +71,7 @@ def chatbot(message: str):
     Context:
     {context}
 
-    Answer using the context. If not available or you cant find the answer in the context, say 'Chief ano know, ano go lie'.
+    Answer using the context. If not available or you cant find the answer in the context, say "I don't have information about that in the provided Knowledge base."
 
     User question:
     {query}
