@@ -153,8 +153,8 @@ Infrastructure:
 Clone repository:
 
 ```
-git clone https://github.com/yourusername/rag-chatbot-fastapi.git
-cd rag-chatbot-fastapi
+git clone https://github.com/i-Blaise/CyberLaw-Assistant-project.git
+cd CyberLaw-Assistant-project
 ```
 
 Create virtual environment:
